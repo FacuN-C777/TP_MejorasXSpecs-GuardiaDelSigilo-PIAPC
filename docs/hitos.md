@@ -15,7 +15,7 @@ version: 3
 | H1. Repositorio preparado para agentes | Completado |
 | H2. Navegación | Completado |
 | H3. Percepción y movimiento | Completado |
-| H4. Máquina de estados | Pendiente |
+| H4. Máquina de estados | Completado |
 | H5. Comparación | Pendiente |
 | H6. Integración final | Pendiente |
 
@@ -58,6 +58,7 @@ version: 3
 - Prioridades explícitas.
 - Registro de transiciones.
 - Pruebas de secuencias.
+- Cierre 6.1: secuencia canónica de dominio en `tests/application/behaviorSimulation.test.ts`; escena sin clic y HUD con estado actual, anterior y última causa.
 
 ### H4.1. Patrullar
 
@@ -68,6 +69,7 @@ version: 3
 
 - Responder a un sonido o última posición conocida sin usar información no percibida.
 - Registrar origen, destino y resultado de navegación.
+- Sin hallazgo al llegar: mini-búsqueda acotada (decisión 8.2 confirmada) antes de regresar.
 
 ### H4.3. Perseguir
 
