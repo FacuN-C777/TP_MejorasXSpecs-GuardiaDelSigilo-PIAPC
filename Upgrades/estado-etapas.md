@@ -5,6 +5,8 @@ Plan: Upgrades/plan-5-mejoras-1-2-4-6-9.md
 Guía Etapa 2 (sesión nueva): Upgrades/Etapa2/plan-etapa-2-cono-vision.md
 Guía Etapa 3 (sesión nueva): Upgrades/Etapa3/plan-etapa-3-impacto-alerta.md
 Guía Etapa 4 (sesión nueva): Upgrades/Etapa4/plan-etapa-4-cobertura-los.md
+Guía Etapa 5 (sesión nueva): Upgrades/Etapa5/plan-etapa-5-escape-ultimo-momento.md
+Guía Etapa 6 (sesión nueva): Upgrades/Etapa6/plan-etapa-6-integracion-validacion.md
 
 ## Resumen
 Etapas implementadas por sesiones futuras. Actualizar al cierre de cada etapa.
@@ -138,21 +140,84 @@ Etapas implementadas por sesiones futuras. Actualizar al cierre de cada etapa.
   brevemente el borde del HUD.
 
 ### Etapa 4: Mejora 6 - Cobertura y ruptura de línea de visión
-- Estado: pendiente
-- Archivos modificados: []
-- Decisiones/umbrales: []
-- `npm run validate`: pendiente
-- Notas: []
+- Estado: completada
+- Inicio: 06/10/2026
+- Cierre: 06/10/2026
+- Archivos modificados:
+  - src/domain/perception/cover.ts (nuevo)
+  - src/application/simulation/perceptionSimulation.ts
+  - src/application/simulation/labLevel.ts
+  - src/game/scenes/GameScene.ts
+  - tests/perception/cover.test.ts (nuevo)
+- Decisiones/umbrales:
+  - Implementación en el commit `97b9de8` ("Integrated Upgrade Four: Cover & LOS") en la
+    rama `UpgradeFive`; cierre documental y de pruebas en la sesión de la Etapa 5.
+  - E4.1: cobertura = celda transitable con al menos un vecino (4 direcciones) bloqueado,
+    evaluada con `GridMap` en `evaluateCover` (`src/domain/perception/cover.ts`, validador
+    puro); el borde del mapa cuenta como obstáculo; una celda no transitable o fuera del
+    mapa devuelve `covered: false, reason: "open"`.
+  - E4.2: rango efectivo reducido por `COVER_VISION_FACTOR = 0.45` (220 -> 99 px) aplicado
+    a `evaluateVision` y al cono de la Etapa 2 dentro de `updatePerceptionSimulation`.
+  - E4.3: evaluación en `updatePerceptionSimulation` y exposición como
+    `PerceptionFrame.cover` (agregado compatible, estilo `cone`); sin nuevas entradas
+    desde `game/`.
+  - E4.4: decisión activa automática por posición (estar en celda de cobertura ya aplica
+    el efecto); sin tecla nueva.
+  - E4.5: ruptura de línea de visión derivada en `game/` desde `vision.reason === "occluded"`
+    (etiqueta HUD "OCLUIDO"); `perception.ts` no cambió de contrato.
+  - E4.6: HUD `cobertura SI/NO (motivo)` y el cono refleja el rango efectivo por datos
+    (la escena sólo dibuja `frame.cone`).
+  - Cierre de la sesión: el hack `(this as any).__coverLabel` se reemplazó por el campo
+    privado tipado `coverLabel` (solo presentación).
+- `npm run validate`: OK (06/10/2026: typecheck + 143 pruebas + build, sin errores)
+- Notas: 7 pruebas nuevas en `tests/perception/cover.test.ts` (cobertura por obstáculo,
+  borde del mapa, celda abierta/bloqueada/fuera de mapa y validadores de entradas).
+  Efecto esperado a revisar en la Etapa 6: el rango reducido por cobertura altera la
+  frecuencia de alertas (Etapa 3) y de escapes (Etapa 5).
 
 ### Etapa 5: Mejora 9 - Escape de último momento
-- Estado: pendiente
-- Archivos modificados: []
-- Decisiones/umbrales: []
-- `npm run validate`: pendiente
-- Notas: []
+- Estado: completada
+- Inicio: 06/10/2026
+- Cierre: 06/10/2026
+- Archivos modificados:
+  - src/domain/behavior/escapeMoment.ts (nuevo)
+  - src/application/simulation/escapeFeedback.ts (nuevo)
+  - src/application/simulation/labLevel.ts
+  - src/game/scenes/GameScene.ts
+  - tests/behavior/escapeMoment.test.ts (nuevo)
+  - tests/application/escapeFeedback.test.ts (nuevo)
+- Decisiones/umbrales:
+  - E5.1: near-miss en PURSUE: la transición real `PURSUE -> SEARCH` (causa
+    `perdida de vision`, la única de la FSM H4) cuenta como escape cuando la distancia
+    guardia-jugador en ese cuadro es `<= ESCAPE_NEAR_DISTANCE`; en `labLevel.ts`
+    `ESCAPE_MARGIN = 40` y `ESCAPE_NEAR_DISTANCE = CAPTURE_DISTANCE + ESCAPE_MARGIN`
+    (24 + 40 = 64 px). La regla es `evaluateEscape` (pura, con validadores de entradas)
+    en `src/domain/behavior/escapeMoment.ts`; la FSM H4 no cambia (no hay estados/eventos
+    nuevos, es lectura de una transición existente).
+  - E5.2: derivación en `src/application/simulation/escapeFeedback.ts` con
+    `escapeForTransitions(transitions, guardPosition, playerPosition, nearDistance)`
+    (patrón `alertFeedback.ts`, sin tocar `BehaviorFrame`); `GameScene` la consume con
+    `result.transitions` y `result.movement.position`.
+  - E5.3: feedback de alivio sólo en `game/`: flash de cámara verde 0x73c991 con
+    `ESCAPE_FX_FLASH_SCALE = 0.35` y `ESCAPE_FX_DURATION_MS = 420`, sin shake/zoom;
+    cooldown propio `ESCAPE_FX_COOLDOWN_MS = 1000`; HUD añade línea
+    `escape ultimo momento <px>` (inicial `escape -`).
+  - E5.4: precedencia en el mismo cuadro: si hay escape, `applyAlertFeedback` omite el VFX
+    de la alerta `search-start` (Etapa 3) —marcada por la bandera `suppressFx` del cuadro—,
+    pero el HUD sigue registrando la alerta; no se toca `lastAlertFxAtMs` (sólo esa
+    transición), ni `alertsForTransitions`/`AlertExtreme`.
+- `npm run validate`: OK (06/10/2026: typecheck + 155 pruebas + build, sin errores)
+- Notas: 12 pruebas nuevas (6 de `escapeMoment` en `tests/behavior/`, 6 de
+  `escapeFeedback` en `tests/application/`, incluida una integración con
+  `BehaviorSimulator` que persigue de cerca y rompe la visión). Efecto esperado a revisar
+  en la Etapa 6: la cobertura (Etapa 4, rango efectivo 99 px) hace más frecuentes las
+  pérdidas de visión cercanas y, por tanto, los escapes; interacción con las alertas de la
+  Etapa 3 ya resuelta vía E5.4.
 
 ### Etapa 6: Integración + validación final
 - Estado: pendiente
+- Guía de la sesión (preparada al cierre de la Etapa 5):
+  `Upgrades/Etapa6/plan-etapa-6-integracion-validacion.md`
 - Archivos modificados: []
 - Integración (eventos cruzados): []
 - `npm run validate`: pendiente

@@ -126,16 +126,38 @@ con cooldown de 800ms).
 - Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 4: Mejora 6 - Cobertura y ruptura de línea de visión
+**Estado:** completada (06/10/2026).
+**Guía de la sesión:** `Upgrades/Etapa4/plan-etapa-4-cobertura-los.md`.
 **Objetivo:** decisión activa de sigilo en dominio.
-**Cambios:** dominio (evaluación cobertura/ruptura LOS), app coordina.
+**Cambios:** nuevo `src/domain/perception/cover.ts` (`evaluateCover`, regla pura),
+integración en `perceptionSimulation.ts` (rango efectivo con `COVER_VISION_FACTOR = 0.45`
+en `labLevel.ts`, `PerceptionFrame.cover` agregado), HUD de cobertura en `GameScene`.
 **Criterios:** evaluación pura (sin Phaser/DOM), decisiones documentadas.
-**Validación:** `npm run validate`.
+**Validación:** `npm run validate` OK (06/10/2026: typecheck + 143 pruebas + build).
+**Notas:**
+- El código de la etapa venía del commit `97b9de8` (rama `UpgradeFive`); la sesión de
+  cierre añadió `tests/perception/cover.test.ts` (7 pruebas), documentación y la
+  limpieza del hack `__coverLabel` (campo privado tipado).
+- Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 5: Mejora 9 - Escape de último momento
+**Estado:** completada (06/10/2026).
+**Guía de la sesión:** `Upgrades/Etapa5/plan-etapa-5-escape-ultimo-momento.md`.
 **Objetivo:** feedback de alivio.
-**Cambios:** dominio regla, app emite `escapeMoment`, game feedback.
-**Criterios:** condición clara, evento emitido correctamente, feedback solo presentación.
-**Validación:** `npm run validate`.
+**Cambios:** dominio `src/domain/behavior/escapeMoment.ts` (`evaluateEscape`: transición
+`PURSUE -> SEARCH` a distancia `<= ESCAPE_NEAR_DISTANCE = 64`), app
+`src/application/simulation/escapeFeedback.ts` (`escapeForTransitions`, patrón
+`alertFeedback.ts`) y `GameScene` (flash verde atenuado + línea HUD + cooldown propio;
+E5.4: en un cuadro con escape se omite el VFX de la alerta `search-start` pero el HUD la
+registra).
+**Criterios:** condición clara (near-miss en PURSUE, regla pura en `domain/`), evento
+emitido correctamente, feedback solo presentación.
+**Validación:** `npm run validate` OK (06/10/2026: typecheck + 155 pruebas + build).
+**Notas:**
+- Rama de trabajo: `UpgradeFive`; misma rama que la Etapa 4, árbol limpio.
+- Umbrales E5.1: `ESCAPE_MARGIN = 40`, `ESCAPE_NEAR_DISTANCE = 24 + 40 = 64` en `labLevel.ts`.
+- Sin nuevas dependencias ni recursos externos; FSM H4 y contratos de Etapas 1-4 intactos.
+- Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 6: Integración + validación final
 **Objetivo:** integración cruzada, coherencia, validación global.

@@ -21,6 +21,8 @@ export const PATROL_LOOK_MS = 900;
 export const VISION_RANGE = 220;
 export const FIELD_OF_VIEW = Math.PI / 2;
 export const COVER_VISION_FACTOR = 0.45;
+export const ESCAPE_MARGIN = 40;
+export const ESCAPE_NEAR_DISTANCE = CAPTURE_DISTANCE + ESCAPE_MARGIN;
 
 interface BlockedRectangle {
   readonly x: number;

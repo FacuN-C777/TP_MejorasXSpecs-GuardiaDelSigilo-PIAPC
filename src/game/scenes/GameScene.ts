@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import {
   CAPTURE_DISTANCE,
+  ESCAPE_NEAR_DISTANCE,
   FIELD_OF_VIEW,
   GUARD_START,
   GRID_HEIGHT,
@@ -27,6 +28,7 @@ import {
   strongestAlert,
   type AlertKind,
 } from "../../application/simulation/alertFeedback";
+import { escapeForTransitions } from "../../application/simulation/escapeFeedback";
 import {
   initialPerceptionState,
   updatePerceptionSimulation,
@@ -70,6 +72,10 @@ const ALERT_FX_SHAKE_SCALE = 0.02;
 const ALERT_FX_ZOOM_SCALE = 0.06;
 const ALERT_FX_FLASH_SCALE = 0.3;
 const ALERT_FX_MIN_TWEEN_MS = 50;
+const ESCAPE_FX_COOLDOWN_MS = 1000;
+const ESCAPE_FX_DURATION_MS = 420;
+const ESCAPE_FX_FLASH_SCALE = 0.35;
+const ESCAPE_FX_COLOR = 0x73c991;
 const ALERT_LABELS: Readonly<Record<AlertKind, string>> = {
   "pursue-start": "persecucion",
   captured: "captura",
@@ -134,6 +140,9 @@ export class GameScene extends Phaser.Scene {
   private behaviorState: BehaviorRuntimeState = initialBehaviorState();
   private lastAlertFxAtMs: number | null = null;
   private alertLabel = "alerta -";
+  private coverLabel = "NO";
+  private lastEscapeFxAtMs: number | null = null;
+  private escapeLabel = "escape -";
 
   public constructor() {
     super("GameScene");
@@ -145,6 +154,9 @@ export class GameScene extends Phaser.Scene {
     this.behaviorState = initialBehaviorState();
     this.lastAlertFxAtMs = null;
     this.alertLabel = "alerta -";
+    this.coverLabel = "NO";
+    this.lastEscapeFxAtMs = null;
+    this.escapeLabel = "escape -";
     this.cameras.main.setBackgroundColor("#10161c");
     this.drawGrid();
 
@@ -275,7 +287,7 @@ export class GameScene extends Phaser.Scene {
     this.perceptionState = frame.state;
 
     this.updateGuardBehavior(time, delta, frame);
-    (this as any).__coverLabel = frame.cover.covered
+    this.coverLabel = frame.cover.covered
       ? `SI (${frame.cover.reason})`
       : "NO";
     this.drawBehaviorPlan();
@@ -314,7 +326,12 @@ export class GameScene extends Phaser.Scene {
       lookDurationMs: PATROL_LOOK_MS,
     });
     this.behaviorState = result.state;
-    this.applyAlertFeedback(result.transitions, time);
+    const escaped = this.applyEscapeFeedback(
+      result.transitions,
+      result.movement.position,
+      time,
+    );
+    this.applyAlertFeedback(result.transitions, time, escaped);
 
     this.guard.setPosition(result.movement.position.x, result.movement.position.y);
     if (result.facing) {
@@ -330,13 +347,52 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private applyAlertFeedback(transitions: readonly BehaviorTransition[], timeMs: number): void {
+  private applyEscapeFeedback(
+    transitions: readonly BehaviorTransition[],
+    guardPosition: Vector2,
+    timeMs: number,
+  ): boolean {
+    const escape = escapeForTransitions(
+      transitions,
+      guardPosition,
+      { x: this.player.x, y: this.player.y },
+      ESCAPE_NEAR_DISTANCE,
+    );
+    if (!escape) {
+      return false;
+    }
+
+    this.escapeLabel = `escape ultimo momento ${escape.distance.toFixed(0)}px`;
+
+    if (this.lastEscapeFxAtMs === null || timeMs - this.lastEscapeFxAtMs >= ESCAPE_FX_COOLDOWN_MS) {
+      this.lastEscapeFxAtMs = timeMs;
+      const color = ESCAPE_FX_COLOR;
+      this.cameras.main.flash(
+        ESCAPE_FX_DURATION_MS,
+        Math.round(((color >> 16) & 0xff) * ESCAPE_FX_FLASH_SCALE),
+        Math.round(((color >> 8) & 0xff) * ESCAPE_FX_FLASH_SCALE),
+        Math.round((color & 0xff) * ESCAPE_FX_FLASH_SCALE),
+      );
+    }
+
+    return true;
+  }
+
+  private applyAlertFeedback(
+    transitions: readonly BehaviorTransition[],
+    timeMs: number,
+    suppressFx = false,
+  ): void {
     const alert = strongestAlert(alertsForTransitions(transitions));
     if (!alert) {
       return;
     }
 
     this.alertLabel = `alerta ${ALERT_LABELS[alert.kind]} ${alert.intensity.toFixed(2)}`;
+
+    if (suppressFx) {
+      return;
+    }
 
     if (this.lastAlertFxAtMs !== null && timeMs - this.lastAlertFxAtMs < ALERT_FX_COOLDOWN_MS) {
       return;
@@ -457,10 +513,11 @@ export class GameScene extends Phaser.Scene {
       objective,
       "fase " + PHASE_LABELS[this.behaviorState.patrolPhase.phase],
       this.alertLabel,
+      this.escapeLabel,
       "vision " + VISION_LABELS[vision.reason],
       "sonido " + sound,
       memory,
-      "cobertura " + ((this as any).__coverLabel ?? "NO"),
+      "cobertura " + this.coverLabel,
     ]);
   }
 }
