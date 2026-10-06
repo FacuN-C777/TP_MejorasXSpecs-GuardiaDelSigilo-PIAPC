@@ -82,3 +82,17 @@ El estudiante puede adoptar Unity u otro entorno si cumple el contrato de equiva
 ## Restricci贸n principal
 
 La l贸gica de navegaci贸n, percepci贸n y decisi贸n no depender谩 de Phaser. El motor ser谩 un adaptador de entrada, tiempo, colisiones y representaci贸n visual.
+
+## Secuencia reproducible - 5 mejoras
+
+1. Iniciar: 
+pm run dev (escena cenital, HUD activo).
+2. Provocar sonido (Q): activar INVESTIGATE (pausa/mirada E1, cono E2 reactivo, alertas E3 posibles).
+3. Ser visto: pasar a PURSUE con visi髇 v醠ida (alerta E3 seg鷑 intensidad).
+4. Romper l韓ea con cobertura: moverse hacia cobertura para perder visi髇 (rango efectivo reducido E4).
+5. Escape de 鷏timo momento: al perder visi髇 cerca en PURSUE?SEARCH, se registra escape ultimo momento (E5, E5.4 puede suprimir VFX search-start).
+6. B鷖queda y regreso: SEARCH agota duraci髇 ? RETURN ? PATROL.
+7. Reinicio (R): restaura todos los elementos.
+
+Verificar HUD: estado/anterior/causa, objetivo, fase (PAUSA/MIRADA/AVANCE), alerta, escape, visi髇, sonido, memoria, cobertura y cono.
+
