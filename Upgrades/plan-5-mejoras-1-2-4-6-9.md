@@ -106,10 +106,24 @@ autocontenido con punto de partida, contratos, decisiones y condiciones de parad
 - Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 3: Mejora 4 - Impacto visual extremo de alerta
+**Estado:** completada (06/10/2026).
+**Guía de la sesión:** `Upgrades/Etapa3/plan-etapa-3-impacto-alerta.md` (documento
+autocontenido con punto de partida, contratos, decisiones y condiciones de parada).
 **Objetivo:** VFX extremo al alertar.
-**Cambios:** app emite `alertExtreme`, game implementa VFX.
+**Cambios:** app emite `alertExtreme` (`src/application/simulation/alertFeedback.ts`:
+`alertsForTransitions()` con kind/intensidad/duración), game implementa VFX
+(shake + flash atenuado al 30% + zoom punch 1 + intensidad × 0.06 en `GameScene`,
+con cooldown de 800ms).
 **Criterios:** sin reglas en game, parámetros mínimos, seguro.
-**Validación:** `npm run validate`.
+**Validación:** `npm run validate` OK (06/10/2026: typecheck + 136 pruebas + build).
+**Notas:**
+- `result.transitions` (antes ignorado en `GameScene`) alimenta las alertas; la FSM H4,
+  `BehaviorFrame` y la Etapa 2 no cambian de contrato.
+- Umbrales E3.1: PURSUE 0.8/450ms, CAPTURED 1.0/700ms, INVESTIGATE 0.45/300ms,
+  SEARCH 0.35/300ms; sólo cuentan entradas reales de estado.
+- HUD añade línea `alerta <tipo> <intensidad>`; el VFX se omite dentro del cooldown.
+- Rama real de la etapa: `UpgradeThree` (la guía original decía `UpgradeTwo`).
+- Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 4: Mejora 6 - Cobertura y ruptura de línea de visión
 **Objetivo:** decisión activa de sigilo en dominio.

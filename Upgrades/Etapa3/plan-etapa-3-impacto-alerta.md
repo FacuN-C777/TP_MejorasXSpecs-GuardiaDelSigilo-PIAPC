@@ -22,8 +22,9 @@ no se duplican. Leer primero `AGENTS.md` y `docs/permisos-recomendados.md`.
 | Proyecto | PIAPC 2026 - Laboratorio Guardia de Sigilo |
 | Plan maestro | `Upgrades/plan-5-mejoras-1-2-4-6-9.md` |
 | Etapa | Etapa 3 de 7 (Mejora 4) |
-| Rama de trabajo | `UpgradeTwo` (verificar con `git branch --show-current`) |
+| Rama de trabajo | `UpgradeThree` (originalmente se habia indicado `UpgradeTwo`; corregido al ejecutar la etapa el 06/10/2026, ver `git branch --show-current`) |
 | Estado previo | Etapa 2 completada (`Upgrades/estado-etapas.md`) |
+| Estado de la etapa | Completada el 06/10/2026; `npm run validate` OK (typecheck + 136 pruebas + build). Ver `Upgrades/estado-etapas.md` |
 | Criterio de aceptacion | `npm run validate` finaliza sin errores; VFX solo en `game/`; el evento `alertExtreme` se emite desde `application/` con parametros minimos (intensidad/duracion); sin reglas de gameplay en la capa de juego |
 
 ## 2. Punto de partida (estado real tras la Etapa 2)
@@ -133,12 +134,14 @@ agrega un modulo nuevo de aplicacion (para derivar la alerta) y su consumo en `G
 
 ## 6. Decisiones a confirmar al iniciar la sesion
 
+Confirmadas en la sesion de ejecucion del 06/10/2026 (registro en `Upgrades/estado-etapas.md`):
+
 | # | Decision | Valor propuesto | Justificacion | Estado |
 |---|---|---|---|---|
-| E3.1 | Que transiciones gatilan `alertExtreme` y su severidad | `-> PURSUE` (alta, p. ej. intensidad 0.8, 450ms) y `-> CAPTURED` (maxima, intensidad 1.0, 700ms); `-> INVESTIGATE`/`-> SEARCH` opcionales con severidad media/baja | Son las transiciones de "amenaza real" (persecucion y captura); mantener pocas evita ruido visual | Confirmable; alternativa: incluir toda entrada a estados de alerta (INVESTIGATE/SEARCH/RETURN) |
-| E3.2 | Ubicacion de la logica de alerta | Funcion pura en `src/application/simulation/alertFeedback.ts` consumida desde `GameScene` (sin tocar `BehaviorFrame`) | Minimo cambio de contratos; `application/` coordina y no representa escena | Confirmable; alternativa A: exponer `alerts` dentro de `BehaviorFrame`; alternativa B: severidad pura en `domain/behavior/` + mapeo en `application/` |
-| E3.3 | Que VFX implementa `game/` | Shake + flash de camara (sin texturas externas), con zoom punch solo si es estable | "Impacto extremo" sin recursos externos ni riesgo de inestabilidad; particulas descartadas salvo textura generada por codigo | Confirmable; alternativa: solo shake+flash (mas conservador) |
-| E3.4 | Anti-spam de VFX | Cooldown de 800ms medido dentro de `GameScene` (presentacion) | Evita sacudidas encadenadas cuando hay transiciones rapidas; no afecta reglas ni telemetria | Confirmable; alternativa: sin cooldown si E3.1 queda estricta |
+| E3.1 | Que transiciones gatilan `alertExtreme` y su severidad | `-> PURSUE` (alta, p. ej. intensidad 0.8, 450ms) y `-> CAPTURED` (maxima, intensidad 1.0, 700ms); `-> INVESTIGATE`/`-> SEARCH` opcionales con severidad media/baja | Son las transiciones de "amenaza real" (persecucion y captura); mantener pocas evita ruido visual | Confirmada: PURSUE (0.8/450ms), CAPTURED (1.0/700ms), INVESTIGATE (0.45/300ms) y SEARCH (0.35/300ms); solo cuentan entradas reales de estado |
+| E3.2 | Ubicacion de la logica de alerta | Funcion pura en `src/application/simulation/alertFeedback.ts` consumida desde `GameScene` (sin tocar `BehaviorFrame`) | Minimo cambio de contratos; `application/` coordina y no representa escena | Confirmada con el valor propuesto; se agrego `strongestAlert()` para jugar solo la alerta mas fuerte por cuadro |
+| E3.3 | Que VFX implementa `game/` | Shake + flash de camara (sin texturas externas), con zoom punch solo si es estable | "Impacto extremo" sin recursos externos ni riesgo de inestabilidad; particulas descartadas salvo textura generada por codigo | Confirmada: shake + flash + zoom punch ida/vuelta (`zoomTo` + `delayedCall`); sin particulas |
+| E3.4 | Anti-spam de VFX | Cooldown de 800ms medido dentro de `GameScene` (presentacion) | Evita sacudidas encadenadas cuando hay transiciones rapidas; no afecta reglas ni telemetria | Confirmada con el valor propuesto; el HUD si registra toda alerta aunque el VFX quede suprimido |
 
 ## 7. Condiciones para detenerse y consultar
 

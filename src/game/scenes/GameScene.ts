@@ -20,7 +20,13 @@ import {
   initialBehaviorState,
   updateBehavior,
   type BehaviorRuntimeState,
+  type BehaviorTransition,
 } from "../../application/simulation/behaviorSimulation";
+import {
+  alertsForTransitions,
+  strongestAlert,
+  type AlertKind,
+} from "../../application/simulation/alertFeedback";
 import {
   initialPerceptionState,
   updatePerceptionSimulation,
@@ -58,6 +64,23 @@ const VISION_LABELS: Readonly<Record<VisionReason, string>> = {
   "outside-cone": "FUERA DEL CONO",
   occluded: "OCLUIDO",
   "invalid-facing": "DIRECCION INVALIDA",
+};
+const ALERT_FX_COOLDOWN_MS = 800;
+const ALERT_FX_SHAKE_SCALE = 0.02;
+const ALERT_FX_ZOOM_SCALE = 0.06;
+const ALERT_FX_FLASH_SCALE = 0.3;
+const ALERT_FX_MIN_TWEEN_MS = 50;
+const ALERT_LABELS: Readonly<Record<AlertKind, string>> = {
+  "pursue-start": "persecucion",
+  captured: "captura",
+  "investigate-start": "investigacion",
+  "search-start": "busqueda",
+};
+const ALERT_COLORS: Readonly<Record<AlertKind, number>> = {
+  "pursue-start": 0xe16969,
+  captured: 0xff3b3b,
+  "investigate-start": 0xe5b454,
+  "search-start": 0xe5b454,
 };
 
 function coneStyle(fsmState: GuardState, visible: boolean): { color: number; alpha: number } {
@@ -109,6 +132,8 @@ export class GameScene extends Phaser.Scene {
   private guardFacing: Vector2 = { x: -1, y: 0 };
   private perceptionState: PerceptionSimulationState = initialPerceptionState();
   private behaviorState: BehaviorRuntimeState = initialBehaviorState();
+  private lastAlertFxAtMs: number | null = null;
+  private alertLabel = "alerta -";
 
   public constructor() {
     super("GameScene");
@@ -118,6 +143,8 @@ export class GameScene extends Phaser.Scene {
     this.guardFacing = { x: -1, y: 0 };
     this.perceptionState = initialPerceptionState();
     this.behaviorState = initialBehaviorState();
+    this.lastAlertFxAtMs = null;
+    this.alertLabel = "alerta -";
     this.cameras.main.setBackgroundColor("#10161c");
     this.drawGrid();
 
@@ -284,6 +311,7 @@ export class GameScene extends Phaser.Scene {
       lookDurationMs: PATROL_LOOK_MS,
     });
     this.behaviorState = result.state;
+    this.applyAlertFeedback(result.transitions, time);
 
     this.guard.setPosition(result.movement.position.x, result.movement.position.y);
     if (result.facing) {
@@ -297,6 +325,37 @@ export class GameScene extends Phaser.Scene {
     } else {
       this.guard.setStrokeStyle(2, 0xb9c5ff);
     }
+  }
+
+  private applyAlertFeedback(transitions: readonly BehaviorTransition[], timeMs: number): void {
+    const alert = strongestAlert(alertsForTransitions(transitions));
+    if (!alert) {
+      return;
+    }
+
+    this.alertLabel = `alerta ${ALERT_LABELS[alert.kind]} ${alert.intensity.toFixed(2)}`;
+
+    if (this.lastAlertFxAtMs !== null && timeMs - this.lastAlertFxAtMs < ALERT_FX_COOLDOWN_MS) {
+      return;
+    }
+    this.lastAlertFxAtMs = timeMs;
+
+    const camera = this.cameras.main;
+    camera.shake(alert.durationMs, alert.intensity * ALERT_FX_SHAKE_SCALE);
+
+    const color = ALERT_COLORS[alert.kind];
+    camera.flash(
+      alert.durationMs,
+      Math.round(((color >> 16) & 0xff) * ALERT_FX_FLASH_SCALE),
+      Math.round(((color >> 8) & 0xff) * ALERT_FX_FLASH_SCALE),
+      Math.round((color & 0xff) * ALERT_FX_FLASH_SCALE),
+    );
+
+    const half = Math.max(alert.durationMs / 2, ALERT_FX_MIN_TWEEN_MS);
+    camera.zoomTo(1 + alert.intensity * ALERT_FX_ZOOM_SCALE, half, "Sine.easeOut");
+    this.time.delayedCall(half, () => {
+      camera.zoomTo(1, half, "Sine.easeIn");
+    });
   }
 
   private drawBehaviorPlan(): void {
@@ -394,6 +453,7 @@ export class GameScene extends Phaser.Scene {
       "causa " + cause,
       objective,
       "fase " + PHASE_LABELS[this.behaviorState.patrolPhase.phase],
+      this.alertLabel,
       "vision " + VISION_LABELS[vision.reason],
       "sonido " + sound,
       memory,
