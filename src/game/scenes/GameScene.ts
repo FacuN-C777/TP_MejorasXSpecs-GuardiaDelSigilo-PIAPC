@@ -5,6 +5,8 @@ import {
   GRID_HEIGHT,
   GRID_WIDTH,
   LAB_MAP,
+  PATROL_LOOK_MS,
+  PATROL_PAUSE_MS,
   PATROL_POINTS,
   PLAYER_START,
   REPLAN_INTERVAL_MS,
@@ -25,6 +27,7 @@ import {
   type PerceptionSimulationState,
 } from "../../application/simulation/perceptionSimulation";
 import type { GuardState } from "../../domain/behavior/guardFsm";
+import type { PatrolPhase } from "../../domain/behavior/patrolPhase";
 import { cellCenter, isWalkable } from "../../domain/model/grid";
 import type { Vector2 } from "../../domain/model/vector";
 import { timeSinceLastPerception } from "../../domain/perception/memory";
@@ -43,6 +46,11 @@ const STATE_LABELS: Readonly<Record<GuardState, string>> = {
   SEARCH: "BUSCANDO",
   RETURN: "REGRESANDO",
   CAPTURED: "CAPTURADO",
+};
+const PHASE_LABELS: Readonly<Record<PatrolPhase, string>> = {
+  walk: "AVANCE",
+  pause: "PAUSA",
+  look: "MIRADA",
 };
 const VISION_LABELS: Readonly<Record<VisionReason, string>> = {
   visible: "VISIBLE",
@@ -241,11 +249,15 @@ export class GameScene extends Phaser.Scene {
       replanIntervalMs: REPLAN_INTERVAL_MS,
       searchDurationMs: SEARCH_DURATION_MS,
       searchRadiusCells: SEARCH_RADIUS_CELLS,
+      pauseDurationMs: PATROL_PAUSE_MS,
+      lookDurationMs: PATROL_LOOK_MS,
     });
     this.behaviorState = result.state;
 
     this.guard.setPosition(result.movement.position.x, result.movement.position.y);
-    if (result.movement.direction) {
+    if (result.facing) {
+      this.guardFacing = result.facing;
+    } else if (result.movement.direction) {
       this.guardFacing = result.movement.direction;
     }
 
@@ -348,6 +360,7 @@ export class GameScene extends Phaser.Scene {
       "anterior " + previous,
       "causa " + cause,
       objective,
+      "fase " + PHASE_LABELS[this.behaviorState.patrolPhase.phase],
       "vision " + VISION_LABELS[vision.reason],
       "sonido " + sound,
       memory,

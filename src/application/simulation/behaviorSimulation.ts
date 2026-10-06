@@ -13,6 +13,14 @@ import {
   nextPatrolPoint,
   patrolIndexForPoint,
 } from "../../domain/behavior/patrol";
+import {
+  applyPatrolPhaseEvent,
+  duePatrolPhaseEvent,
+  initialPatrolPhase,
+  patrolLookDirection,
+  type PatrolPhaseEvent,
+  type PatrolPhaseState,
+} from "../../domain/behavior/patrolPhase";
 import { buildSearchPattern } from "../../domain/behavior/searchPattern";
 import { cellCenter, worldToCell, type GridMap, type GridPoint } from "../../domain/model/grid";
 import { distanceBetween, type Vector2 } from "../../domain/model/vector";
@@ -50,6 +58,8 @@ export interface BehaviorRuntimeState {
   readonly plannedAtMs: number;
   readonly lastPlan: SearchResult | null;
   readonly failedReturnTargets: readonly GridPoint[];
+  readonly patrolPhase: PatrolPhaseState;
+  readonly skipPauseOnArrival: boolean;
   readonly started: boolean;
 }
 
@@ -69,6 +79,8 @@ export interface BehaviorInput {
   readonly replanIntervalMs: number;
   readonly searchDurationMs: number;
   readonly searchRadiusCells: number;
+  readonly pauseDurationMs: number;
+  readonly lookDurationMs: number;
 }
 
 export interface BehaviorMovement {
@@ -90,6 +102,7 @@ export interface BehaviorFrame {
   readonly state: BehaviorRuntimeState;
   readonly movement: BehaviorMovement;
   readonly transitions: readonly BehaviorTransition[];
+  readonly facing: Vector2 | null;
 }
 
 export function initialBehaviorState(): BehaviorRuntimeState {
@@ -106,6 +119,8 @@ export function initialBehaviorState(): BehaviorRuntimeState {
     plannedAtMs: 0,
     lastPlan: null,
     failedReturnTargets: [],
+    patrolPhase: initialPatrolPhase(0),
+    skipPauseOnArrival: false,
     started: false,
   };
 }
@@ -139,11 +154,16 @@ export function updateBehavior(
   const routeStatus = state.route.status;
   const exhausted = isSearchExhausted(state, input);
   const targetChanged = hasPursueTargetChanged(state, input, visionCell);
+  const phaseConfig = {
+    pauseDurationMs: input.pauseDurationMs,
+    lookDurationMs: input.lookDurationMs,
+  };
+  const duePhaseEvent = duePatrolPhaseEvent(state.patrolPhase, input.timeMs, phaseConfig);
 
   let event: GuardEvent | null = null;
   if (state.fsmState !== "CAPTURED") {
     event = state.started
-      ? selectEvent(state, input, captureDistanceMet, exhausted, targetChanged)
+      ? selectEvent(state, input, captureDistanceMet, exhausted, targetChanged, duePhaseEvent)
       : "start";
   }
 
@@ -158,6 +178,8 @@ export function updateBehavior(
     targetChanged,
     searchExhausted: exhausted,
     arrivedAtPatrolPoint: routeStatus === "completed" && state.objectiveKind === "patrol",
+    patrolPauseElapsed: duePhaseEvent === "look-start",
+    patrolLookElapsed: duePhaseEvent === "patrol-continue",
     captureDistanceMet,
   };
 
@@ -205,6 +227,32 @@ export function updateBehavior(
     };
   }
 
+  let patrolPhase = state.patrolPhase;
+  if (action.kind === "reset" || fsmState !== "PATROL") {
+    patrolPhase = initialPatrolPhase(input.timeMs);
+  } else if (isPatrolPhaseEvent(event)) {
+    patrolPhase = applyPatrolPhaseEvent(event, input.timeMs);
+  }
+
+  let skipPauseOnArrival = state.skipPauseOnArrival;
+  switch (action.kind) {
+    case "patrol-start":
+    case "patrol-advance":
+    case "patrol-skip":
+    case "reset":
+      skipPauseOnArrival = false;
+      break;
+    case "patrol-resume":
+      skipPauseOnArrival = true;
+      break;
+    default:
+      break;
+  }
+
+  const facing = patrolPhase.phase === "look"
+    ? patrolLookDirection(input.patrolPoints, input.map, applied.patrolIndex)
+    : null;
+
   const next: BehaviorRuntimeState = {
     fsmState,
     previousFsmState: event !== null ? previous : state.previousFsmState,
@@ -218,10 +266,16 @@ export function updateBehavior(
     plannedAtMs: applied.plannedAtMs,
     lastPlan: applied.lastPlan,
     failedReturnTargets: applied.failedReturnTargets,
+    patrolPhase,
+    skipPauseOnArrival,
     started,
   };
 
-  return { state: next, movement, transitions };
+  return { state: next, movement, transitions, facing };
+}
+
+function isPatrolPhaseEvent(event: GuardEvent | null): event is PatrolPhaseEvent {
+  return event === "pause-start" || event === "look-start" || event === "patrol-continue";
 }
 
 function selectEvent(
@@ -230,6 +284,7 @@ function selectEvent(
   captureDistanceMet: boolean,
   exhausted: boolean,
   targetChanged: boolean,
+  duePhaseEvent: PatrolPhaseEvent | null,
 ): GuardEvent | null {
   switch (state.fsmState) {
     case "PATROL":
@@ -243,7 +298,13 @@ function selectEvent(
         return "route-failed";
       }
       if (state.route.status === "completed" && state.objectiveKind === "patrol") {
-        return "patrol-advance";
+        if (state.skipPauseOnArrival) {
+          return "patrol-advance";
+        }
+        if (state.patrolPhase.phase === "walk") {
+          return "pause-start";
+        }
+        return duePhaseEvent;
       }
       return null;
     case "INVESTIGATE":
@@ -357,6 +418,8 @@ function applyAction(
 
   switch (action.kind) {
     case "keep":
+    case "patrol-pause":
+    case "patrol-look":
       break;
     case "stop":
     case "reset":

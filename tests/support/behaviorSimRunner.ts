@@ -25,6 +25,8 @@ export interface SimulatorOptions {
   readonly replanIntervalMs?: number;
   readonly searchDurationMs?: number;
   readonly searchRadiusCells?: number;
+  readonly pauseDurationMs?: number;
+  readonly lookDurationMs?: number;
 }
 
 export const DEFAULT_TILE_SIZE = 32;
@@ -34,6 +36,8 @@ const DEFAULT_CAPTURE_DISTANCE = 24;
 const DEFAULT_REPLAN_INTERVAL_MS = 300;
 const DEFAULT_SEARCH_DURATION_MS = 8000;
 const DEFAULT_SEARCH_RADIUS_CELLS = 2;
+export const DEFAULT_PAUSE_DURATION_MS = 1200;
+export const DEFAULT_LOOK_DURATION_MS = 900;
 
 export function cellCenterWorld(cell: GridPoint, tileSize: number): Vector2 {
   return cellCenter(cell, tileSize);
@@ -48,6 +52,8 @@ export class BehaviorSimulator {
   public readonly replanIntervalMs: number;
   public readonly searchDurationMs: number;
   public readonly searchRadiusCells: number;
+  public readonly pauseDurationMs: number;
+  public readonly lookDurationMs: number;
   public state: BehaviorRuntimeState;
   public position: Vector2;
   public timeMs = 0;
@@ -63,6 +69,8 @@ export class BehaviorSimulator {
     this.replanIntervalMs = options.replanIntervalMs ?? DEFAULT_REPLAN_INTERVAL_MS;
     this.searchDurationMs = options.searchDurationMs ?? DEFAULT_SEARCH_DURATION_MS;
     this.searchRadiusCells = options.searchRadiusCells ?? DEFAULT_SEARCH_RADIUS_CELLS;
+    this.pauseDurationMs = options.pauseDurationMs ?? DEFAULT_PAUSE_DURATION_MS;
+    this.lookDurationMs = options.lookDurationMs ?? DEFAULT_LOOK_DURATION_MS;
     this.state = initialBehaviorState();
     this.position = cellCenterWorld(options.guardCell, this.tileSize);
   }
@@ -84,6 +92,8 @@ export class BehaviorSimulator {
       replanIntervalMs: this.replanIntervalMs,
       searchDurationMs: this.searchDurationMs,
       searchRadiusCells: this.searchRadiusCells,
+      pauseDurationMs: this.pauseDurationMs,
+      lookDurationMs: this.lookDurationMs,
     });
 
     this.state = frame.state;

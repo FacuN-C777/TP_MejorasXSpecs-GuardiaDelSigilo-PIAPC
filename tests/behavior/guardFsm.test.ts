@@ -16,6 +16,8 @@ const BASE: TransitionContext = {
   targetChanged: false,
   searchExhausted: false,
   arrivedAtPatrolPoint: false,
+  patrolPauseElapsed: false,
+  patrolLookElapsed: false,
   captureDistanceMet: false,
 };
 
@@ -42,6 +44,66 @@ describe("guard FSM", () => {
       action: { kind: "patrol-advance" },
       cause: "llegada patrulla",
     });
+  });
+
+  it("pauses after arriving at a patrol point", () => {
+    expect(step("PATROL", "pause-start", { arrivedAtPatrolPoint: true })).toEqual({
+      state: "PATROL",
+      action: { kind: "patrol-pause" },
+      cause: "pausa",
+    });
+    expect(() => step("PATROL", "pause-start")).toThrow();
+  });
+
+  it("starts the directional look once the pause elapses", () => {
+    expect(step("PATROL", "look-start", { patrolPauseElapsed: true })).toEqual({
+      state: "PATROL",
+      action: { kind: "patrol-look" },
+      cause: "mirada",
+    });
+    expect(() => step("PATROL", "look-start")).toThrow();
+  });
+
+  it("continues the patrol cycle once the look elapses", () => {
+    expect(step("PATROL", "patrol-continue", { patrolLookElapsed: true })).toEqual({
+      state: "PATROL",
+      action: { kind: "patrol-advance" },
+      cause: "continua patrulla",
+    });
+    expect(() => step("PATROL", "patrol-continue")).toThrow();
+  });
+
+  it("interrupts pause and look with vision", () => {
+    const duringPause = step("PATROL", "vision-valid", {
+      arrivedAtPatrolPoint: true,
+      hasValidVision: true,
+      perceivedPlayer: { x: 6, y: 6 },
+    });
+    expect(duringPause.state).toBe("PURSUE");
+    expect(duringPause.cause).toBe("vision");
+
+    const duringLook = step("PATROL", "vision-valid", {
+      patrolPauseElapsed: true,
+      hasValidVision: true,
+      perceivedPlayer: { x: 6, y: 6 },
+    });
+    expect(duringLook.state).toBe("PURSUE");
+  });
+
+  it("interrupts pause and look with a sound", () => {
+    const duringPause = step("PATROL", "sound-heard", {
+      arrivedAtPatrolPoint: true,
+      soundHeard: true,
+      soundPosition: { x: 2, y: 2 },
+    });
+    expect(duringPause.state).toBe("INVESTIGATE");
+
+    const duringLook = step("PATROL", "sound-heard", {
+      patrolLookElapsed: true,
+      soundHeard: true,
+      soundPosition: { x: 2, y: 2 },
+    });
+    expect(duringLook.state).toBe("INVESTIGATE");
   });
 
   it("turns vision into pursuit from PATROL", () => {

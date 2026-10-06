@@ -18,12 +18,18 @@ export type GuardEvent =
   | "target-differs"
   | "search-exhausted"
   | "patrol-advance"
+  | "pause-start"
+  | "look-start"
+  | "patrol-continue"
   | "captured"
   | "reset";
 
 export type TransitionCause =
   | "inicio"
   | "llegada patrulla"
+  | "pausa"
+  | "mirada"
+  | "continua patrulla"
   | "vision"
   | "sonido"
   | "patrulla inaccesible"
@@ -50,6 +56,8 @@ export type GuardAction =
   | { readonly kind: "patrol-advance" }
   | { readonly kind: "patrol-skip" }
   | { readonly kind: "patrol-resume" }
+  | { readonly kind: "patrol-pause" }
+  | { readonly kind: "patrol-look" }
   | { readonly kind: "investigate"; readonly target: GridPoint }
   | { readonly kind: "pursue"; readonly target: GridPoint }
   | { readonly kind: "search"; readonly origin: GridPoint }
@@ -70,6 +78,8 @@ export interface TransitionContext {
   readonly targetChanged: boolean;
   readonly searchExhausted: boolean;
   readonly arrivedAtPatrolPoint: boolean;
+  readonly patrolPauseElapsed: boolean;
+  readonly patrolLookElapsed: boolean;
   readonly captureDistanceMet: boolean;
 }
 
@@ -123,6 +133,15 @@ function transitionFromPatrol(event: GuardEvent, context: TransitionContext): Tr
     case "patrol-advance":
       requireContext(context.arrivedAtPatrolPoint, "patrol-advance requires an arrived patrol point.");
       return { state: "PATROL", action: { kind: "patrol-advance" }, cause: "llegada patrulla" };
+    case "pause-start":
+      requireContext(context.arrivedAtPatrolPoint, "pause-start requires an arrived patrol point.");
+      return { state: "PATROL", action: { kind: "patrol-pause" }, cause: "pausa" };
+    case "look-start":
+      requireContext(context.patrolPauseElapsed, "look-start requires an elapsed pause.");
+      return { state: "PATROL", action: { kind: "patrol-look" }, cause: "mirada" };
+    case "patrol-continue":
+      requireContext(context.patrolLookElapsed, "patrol-continue requires an elapsed look.");
+      return { state: "PATROL", action: { kind: "patrol-advance" }, cause: "continua patrulla" };
     case "vision-valid":
       requireContext(context.hasValidVision, "vision-valid requires a valid vision.");
       requireContext(context.perceivedPlayer !== null, "vision-valid requires a perceived player cell.");

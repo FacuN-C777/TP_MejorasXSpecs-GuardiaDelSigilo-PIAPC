@@ -16,6 +16,8 @@ export const SEARCH_DURATION_MS = 8000;
 export const SEARCH_RADIUS_CELLS = 2;
 export const REPLAN_INTERVAL_MS = 300;
 export const CAPTURE_DISTANCE = 24;
+export const PATROL_PAUSE_MS = 1200;
+export const PATROL_LOOK_MS = 900;
 
 interface BlockedRectangle {
   readonly x: number;
