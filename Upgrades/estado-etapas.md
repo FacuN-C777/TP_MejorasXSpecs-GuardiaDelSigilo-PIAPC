@@ -1,8 +1,9 @@
 # Estado de etapas - 5 mejoras (1,2,4,6,9)
 
-Ubicación: Upgrade0/
-Plan: Upgrade0/plan-5-mejoras-1-2-4-6-9.md
-Guía Etapa 2 (sesión nueva): Upgrade0/Etapa2/plan-etapa-2-cono-vision.md
+Ubicación: Upgrades/
+Plan: Upgrades/plan-5-mejoras-1-2-4-6-9.md
+Guía Etapa 2 (sesión nueva): Upgrades/Etapa2/plan-etapa-2-cono-vision.md
+Guía Etapa 3 (sesión nueva): Upgrades/Etapa3/plan-etapa-3-impacto-alerta.md
 
 ## Resumen
 Etapas implementadas por sesiones futuras. Actualizar al cierre de cada etapa.
@@ -64,13 +65,37 @@ Etapas implementadas por sesiones futuras. Actualizar al cierre de cada etapa.
   ritmo pause→look→avance, interrupciones y reanudación sin pausa.
 
 ### Etapa 2: Mejora 2 - Cono de visión visible y reactivo
-- Estado: pendiente
-- Guía para la sesión: Upgrade0/Etapa2/plan-etapa-2-cono-vision.md (autocontenida)
-- Archivos modificados: []
-- Decisiones/umbrales: []
-- `npm run validate`: pendiente
-- Notas: Leer la guía antes de inspeccionar código; incluye punto de partida exacto,
-  contratos, decisiones a confirmar y condiciones de parada.
+- Estado: completada
+- Inicio: 06/10/2026
+- Cierre: 06/10/2026
+- Archivos modificados:
+  - src/domain/perception/visionCone.ts (nuevo)
+  - src/application/simulation/labLevel.ts
+  - src/application/simulation/perceptionSimulation.ts
+  - src/game/scenes/GameScene.ts
+  - tests/perception/visionCone.test.ts (nuevo)
+  - tests/application/perceptionSimulation.test.ts
+- Decisiones/umbrales:
+  - E2.1: modelo `VisionCone {origin, direction, range, fovRadians}` en
+    `src/domain/perception/visionCone.ts` con validador puro (`createVisionCone`:
+    vectores finitos, `range >= 0` finito, `fovRadians` en 0..2PI, reutiliza
+    `assertFiniteVector`); configuración `VISION_RANGE = 220` y
+    `FIELD_OF_VIEW = Math.PI / 2` movidas de `GameScene.ts` a `labLevel.ts`.
+  - E2.2: estilo del cono reactivo por estado de conducta (color/alpha por
+    `fsmState`: PURSUE rojo 0xe16969 α0.30, INVESTIGATE/SEARCH amarillo 0xe5b454 α0.24,
+    PATROL/RETURN azul 0x6b8afd α0.12, CAPTURED azul α0.06) más resultado de visión
+    (si `vision.visible` → verde 0x73c991 con α mínimo 0.26). Sólo presentación.
+  - E2.3: cono siempre visible; atenuado (α bajo) fuera de estados de alerta.
+  - E2.4: `evaluateVision`/`VisionResult`/`VisionQuery` sin cambios; sólo se agregó
+    `cone: VisionCone` a `PerceptionFrame` (agregado compatible, regresión H3 intacta).
+  - La escena dibuja el cono consumiendo exclusivamente `frame.cone`
+    (origen, dirección, radio, ángulo) en `drawPerception`; sin constantes propias.
+  - Corrección de rutas: las referencias históricas `Upgrade0/` de los documentos
+    se actualizaron a `Upgrades/` (la carpeta fue renombrada por el usuario).
+- `npm run validate`: OK (06/10/2026: typecheck + 125 pruebas + build, sin errores)
+- Notas: 7 pruebas nuevas (5 de `visionCone`, 2 de exposición del cono en el frame).
+  Verificación manual pendiente opcional con `npm run dev`: cono rota en fase MIRADA,
+  cambia de estilo al perseguir y conserva la oclusión (no hay prueba de navegador).
 
 ### Etapa 3: Mejora 4 - Impacto visual extremo de alerta
 - Estado: pendiente

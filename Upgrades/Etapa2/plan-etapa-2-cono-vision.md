@@ -20,10 +20,10 @@ no se duplican. Leer primero `AGENTS.md` y `docs/permisos-recomendados.md`.
 | Campo | Valor |
 |---|---|
 | Proyecto | PIAPC 2026 - Laboratorio Guardia de Sigilo |
-| Plan maestro | `Upgrade0/plan-5-mejoras-1-2-4-6-9.md` |
+| Plan maestro | `Upgrades/plan-5-mejoras-1-2-4-6-9.md` |
 | Etapa | Etapa 2 de 7 (Mejora 2) |
 | Rama de trabajo | `UpgradeOne&PlanOfAction` |
-| Estado previo | Etapa 1 completada (`Upgrade0/estado-etapas.md`) |
+| Estado previo | Etapa 1 completada (`Upgrades/estado-etapas.md`) |
 | Criterio de aceptacion | `npm run validate` finaliza sin errores; dibujo solo en `game/`; datos del cono provenientes de `domain/`/`application/`; reactividad demostrable |
 
 ## 2. Punto de partida (estado real tras la Etapa 1)
@@ -154,7 +154,7 @@ Replica de `docs/permisos-recomendados.md:28-38`, aplicadas a esta etapa:
 ## 8. Cierre de la etapa
 
 1. Ejecutar `npm run validate` y registrar el resultado.
-2. Actualizar `Upgrade0/estado-etapas.md` (Etapa 2: completada, fecha, archivos modificados,
+2. Actualizar `Upgrades/estado-etapas.md` (Etapa 2: completada, fecha, archivos modificados,
    decisiones/umbrales, resultado de validate).
-3. Actualizar la seccion de Etapa 2 en `Upgrade0/plan-5-mejoras-1-2-4-6-9.md` con estado y notas.
+3. Actualizar la seccion de Etapa 2 en `Upgrades/plan-5-mejoras-1-2-4-6-9.md` con estado y notas.
 4. No avanzar a la Etapa 3 si `npm run validate` falla.

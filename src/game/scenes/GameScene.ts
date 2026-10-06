@@ -1,6 +1,7 @@
 import Phaser from "phaser";
 import {
   CAPTURE_DISTANCE,
+  FIELD_OF_VIEW,
   GUARD_START,
   GRID_HEIGHT,
   GRID_WIDTH,
@@ -13,6 +14,7 @@ import {
   SEARCH_DURATION_MS,
   SEARCH_RADIUS_CELLS,
   TILE_SIZE,
+  VISION_RANGE,
 } from "../../application/simulation/labLevel";
 import {
   initialBehaviorState,
@@ -35,8 +37,6 @@ import type { VisionReason, VisionResult } from "../../domain/perception/percept
 
 const PLAYER_SPEED = 190;
 const GUARD_SPEED = 115;
-const VISION_RANGE = 220;
-const FIELD_OF_VIEW = Math.PI / 2;
 const SOUND_RADIUS = 190;
 const SOUND_DURATION_MS = 800;
 const STATE_LABELS: Readonly<Record<GuardState, string>> = {
@@ -59,6 +59,37 @@ const VISION_LABELS: Readonly<Record<VisionReason, string>> = {
   occluded: "OCLUIDO",
   "invalid-facing": "DIRECCION INVALIDA",
 };
+
+function coneStyle(fsmState: GuardState, visible: boolean): { color: number; alpha: number } {
+  let color: number;
+  let alpha: number;
+
+  switch (fsmState) {
+    case "PURSUE":
+      color = 0xe16969;
+      alpha = 0.3;
+      break;
+    case "INVESTIGATE":
+    case "SEARCH":
+      color = 0xe5b454;
+      alpha = 0.24;
+      break;
+    case "CAPTURED":
+      color = 0x6b8afd;
+      alpha = 0.06;
+      break;
+    default:
+      color = 0x6b8afd;
+      alpha = 0.12;
+  }
+
+  if (visible) {
+    color = 0x73c991;
+    alpha = Math.max(alpha, 0.26);
+  }
+
+  return { color, alpha };
+}
 
 export class GameScene extends Phaser.Scene {
   private player!: Phaser.GameObjects.Rectangle;
@@ -218,7 +249,7 @@ export class GameScene extends Phaser.Scene {
 
     this.updateGuardBehavior(time, delta, frame);
     this.drawBehaviorPlan();
-    this.drawPerception(frame.vision);
+    this.drawPerception(frame);
     this.updateTelemetry(time, frame.vision, frame.soundHeard);
   }
 
@@ -305,17 +336,19 @@ export class GameScene extends Phaser.Scene {
     this.navigationGraphics.strokePath();
   }
 
-  private drawPerception(vision: VisionResult): void {
+  private drawPerception(frame: PerceptionFrame): void {
     this.perceptionGraphics.clear();
-    const facingAngle = Math.atan2(this.guardFacing.y, this.guardFacing.x);
-    const halfFieldOfView = FIELD_OF_VIEW / 2;
-    this.perceptionGraphics.fillStyle(vision.visible ? 0x73c991 : 0x6b8afd, 0.16);
+    const cone = frame.cone;
+    const facingAngle = Math.atan2(cone.direction.y, cone.direction.x);
+    const halfFieldOfView = cone.fovRadians / 2;
+    const style = coneStyle(this.behaviorState.fsmState, frame.vision.visible);
+    this.perceptionGraphics.fillStyle(style.color, style.alpha);
     this.perceptionGraphics.beginPath();
-    this.perceptionGraphics.moveTo(this.guard.x, this.guard.y);
+    this.perceptionGraphics.moveTo(cone.origin.x, cone.origin.y);
     this.perceptionGraphics.arc(
-      this.guard.x,
-      this.guard.y,
-      VISION_RANGE,
+      cone.origin.x,
+      cone.origin.y,
+      cone.range,
       facingAngle - halfFieldOfView,
       facingAngle + halfFieldOfView,
     );

@@ -11,6 +11,7 @@ import {
   type SoundEvent,
   type VisionResult,
 } from "../../domain/perception/perception";
+import { createVisionCone, type VisionCone } from "../../domain/perception/visionCone";
 
 export interface PerceptionSimulationState {
   readonly memory: PerceptionMemory;
@@ -21,6 +22,7 @@ export interface PerceptionFrame {
   readonly state: PerceptionSimulationState;
   readonly vision: VisionResult;
   readonly soundHeard: boolean;
+  readonly cone: VisionCone;
 }
 
 export interface PerceptionFrameInput {
@@ -85,9 +87,17 @@ export function updatePerceptionSimulation(
     });
   }
 
+  const cone = createVisionCone(
+    input.observer,
+    input.facing,
+    input.visionRange,
+    input.fieldOfViewRadians,
+  );
+
   return {
     state: { memory, soundEvent },
     vision,
     soundHeard,
+    cone,
   };
 }

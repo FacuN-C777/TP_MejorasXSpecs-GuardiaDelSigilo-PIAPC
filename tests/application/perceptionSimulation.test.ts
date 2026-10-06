@@ -49,4 +49,26 @@ describe("perception simulation", () => {
     expect(frame.state.soundEvent).toBeNull();
     expect(frame.soundHeard).toBe(false);
   });
+
+  it("exposes the effective vision cone of the frame", () => {
+    const frame = updatePerceptionSimulation(initialPerceptionState(), INPUT);
+
+    expect(frame.cone.origin).toEqual(INPUT.observer);
+    expect(frame.cone.direction).toEqual(INPUT.facing);
+    expect(frame.cone.range).toBe(INPUT.visionRange);
+    expect(frame.cone.fovRadians).toBeCloseTo(INPUT.fieldOfViewRadians);
+  });
+
+  it("reflects the injected configuration and orientation in the cone", () => {
+    const frame = updatePerceptionSimulation(initialPerceptionState(), {
+      ...INPUT,
+      facing: { x: 0, y: -1 },
+      visionRange: 120,
+      fieldOfViewRadians: Math.PI / 4,
+    });
+
+    expect(frame.cone.direction).toEqual({ x: 0, y: -1 });
+    expect(frame.cone.range).toBe(120);
+    expect(frame.cone.fovRadians).toBeCloseTo(Math.PI / 4);
+  });
 });

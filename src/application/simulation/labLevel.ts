@@ -18,6 +18,8 @@ export const REPLAN_INTERVAL_MS = 300;
 export const CAPTURE_DISTANCE = 24;
 export const PATROL_PAUSE_MS = 1200;
 export const PATROL_LOOK_MS = 900;
+export const VISION_RANGE = 220;
+export const FIELD_OF_VIEW = Math.PI / 2;
 
 interface BlockedRectangle {
   readonly x: number;

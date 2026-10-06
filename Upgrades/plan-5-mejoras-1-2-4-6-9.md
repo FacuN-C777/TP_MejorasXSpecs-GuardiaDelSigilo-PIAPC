@@ -82,16 +82,28 @@ Mejoras a implementar:
   desde RETURN avanza sin pausa); `BehaviorFrame` expone `facing` y la escena sólo lo refleja.
 - Umbrales `PATROL_PAUSE_MS=1200` / `PATROL_LOOK_MS=900` en `labLevel.ts`; HUD muestra
   `fase AVANCE/PAUSA/MIRADA`.
-- Detalle completo y rastreo en `Upgrade0/estado-etapas.md`.
+- Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 2: Mejora 2 - Cono de visión visible y reactivo
-**Estado:** pendiente.
-**Guía para la sesión nueva:** `Upgrade0/Etapa2/plan-etapa-2-cono-vision.md` (documento
-autocontenido con punto de partida, contratos, decisiones a confirmar y condiciones de parada).
+**Estado:** completada (06/10/2026).
+**Guía de la sesión:** `Upgrades/Etapa2/plan-etapa-2-cono-vision.md` (documento
+autocontenido con punto de partida, contratos, decisiones y condiciones de parada).
 **Objetivo:** cono visible y reactivo.
-**Cambios:** dominio/app (modelo), game (dibujo reactivo).
-**Criterios:** dibujo solo en game, datos provenientes de dominio/app, reactivo.
-**Validación:** `npm run validate`.
+**Cambios:** dominio (`visionCone.ts`), app (config en `labLevel.ts` + `cone` en
+`PerceptionFrame`), game (dibujo desde `frame.cone` + estilo por estado).
+**Criterios:** dibujo solo en game, datos del cono provenientes de dominio/app, reactivo.
+**Validación:** `npm run validate` OK (06/10/2026: typecheck + 125 pruebas + build).
+**Notas:**
+- Nuevo `src/domain/perception/visionCone.ts`: `VisionCone` + `createVisionCone`
+  (validador puro); `evaluateVision` sin cambios (E2.4).
+- `VISION_RANGE = 220` / `FIELD_OF_VIEW = Math.PI / 2` ahora viven en `labLevel.ts`;
+  la escena no tiene constantes propias del cono.
+- `PerceptionFrame` expone `cone` (origen, dirección, radio, ángulo); `drawPerception`
+  sólo consume `frame.cone`.
+- Reactividad (E2.2/E2.3): color/alpha por `fsmState` + `vision.visible`; siempre
+  visible, atenuado fuera de PURSUE/INVESTIGATE/SEARCH. Sólo presentación.
+- Rutas `Upgrade0/` → `Upgrades/` corregidas en esta documentación.
+- Detalle completo y rastreo en `Upgrades/estado-etapas.md`.
 
 ### Etapa 3: Mejora 4 - Impacto visual extremo de alerta
 **Objetivo:** VFX extremo al alertar.
@@ -118,8 +130,8 @@ autocontenido con punto de partida, contratos, decisiones a confirmar y condicio
 **Validación:** `npm run validate`.
 
 ## Reglas para actualizar documentación (al cierre de cada etapa)
-1. Actualizar `Upgrade0/estado-etapas.md`: marcar etapa (completada), fecha, archivos modificados (rutas), decisiones/umbrales, resultado `npm run validate`.
-2. Actualizar `Upgrade0/plan-5-mejoras-1-2-4-6-9.md` con estado de etapa y notas.
+1. Actualizar `Upgrades/estado-etapas.md`: marcar etapa (completada), fecha, archivos modificados (rutas), decisiones/umbrales, resultado `npm run validate`.
+2. Actualizar `Upgrades/plan-5-mejoras-1-2-4-6-9.md` con estado de etapa y notas.
 3. No avanzar a siguiente etapa si `npm run validate` falla.
 4. Mantener cambios acotados a la etapa.
 
