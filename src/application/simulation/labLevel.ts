@@ -20,6 +20,7 @@ export const PATROL_PAUSE_MS = 1200;
 export const PATROL_LOOK_MS = 900;
 export const VISION_RANGE = 220;
 export const FIELD_OF_VIEW = Math.PI / 2;
+export const COVER_VISION_FACTOR = 0.45;
 
 interface BlockedRectangle {
   readonly x: number;

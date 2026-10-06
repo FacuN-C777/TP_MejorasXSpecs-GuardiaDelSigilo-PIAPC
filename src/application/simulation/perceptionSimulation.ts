@@ -12,6 +12,8 @@ import {
   type VisionResult,
 } from "../../domain/perception/perception";
 import { createVisionCone, type VisionCone } from "../../domain/perception/visionCone";
+import { evaluateCover, type CoverResult } from "../../domain/perception/cover";
+import { COVER_VISION_FACTOR } from "./labLevel";
 
 export interface PerceptionSimulationState {
   readonly memory: PerceptionMemory;
@@ -23,6 +25,7 @@ export interface PerceptionFrame {
   readonly vision: VisionResult;
   readonly soundHeard: boolean;
   readonly cone: VisionCone;
+  readonly cover: CoverResult;
 }
 
 export interface PerceptionFrameInput {
@@ -70,13 +73,18 @@ export function updatePerceptionSimulation(
     }
   }
 
+  const cover = evaluateCover(input.map, input.tileSize, input.target);
+  const effectiveRange = cover.covered
+    ? input.visionRange * COVER_VISION_FACTOR
+    : input.visionRange;
+
   const vision = evaluateVision({
     map: input.map,
     tileSize: input.tileSize,
     observer: input.observer,
     facing: input.facing,
     target: input.target,
-    range: input.visionRange,
+    range: effectiveRange,
     fieldOfViewRadians: input.fieldOfViewRadians,
   });
   if (vision.visible) {
@@ -90,7 +98,7 @@ export function updatePerceptionSimulation(
   const cone = createVisionCone(
     input.observer,
     input.facing,
-    input.visionRange,
+    effectiveRange,
     input.fieldOfViewRadians,
   );
 
@@ -99,5 +107,6 @@ export function updatePerceptionSimulation(
     vision,
     soundHeard,
     cone,
+    cover,
   };
 }

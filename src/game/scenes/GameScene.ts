@@ -275,6 +275,9 @@ export class GameScene extends Phaser.Scene {
     this.perceptionState = frame.state;
 
     this.updateGuardBehavior(time, delta, frame);
+    (this as any).__coverLabel = frame.cover.covered
+      ? `SI (${frame.cover.reason})`
+      : "NO";
     this.drawBehaviorPlan();
     this.drawPerception(frame);
     this.updateTelemetry(time, frame.vision, frame.soundHeard);
@@ -457,6 +460,7 @@ export class GameScene extends Phaser.Scene {
       "vision " + VISION_LABELS[vision.reason],
       "sonido " + sound,
       memory,
+      "cobertura " + ((this as any).__coverLabel ?? "NO"),
     ]);
   }
 }
