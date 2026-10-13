@@ -3,7 +3,7 @@
 Repositorio: (https://github.com/FacuN-C777/TP_MejorasXSpecs-GuardiaDelSigilo-PIAPC.git)
 Commit inicial: 71d78fee157519c5070f9421c28a7c60dd51e18c
 Commit de implementación: 3691f3daadf5ed3268e046a39d7d726cade8662a
-Versión de entrega: 3691f3daadf5ed3268e046a39d7d726cade8662a
+Versión de entrega: commit final de entrega en repo.
 Variante: A (única)
 Herramienta/modelo o trabajo manual: opencode (modelo `opencode/big-pickle`); asistencia por agente con revisión humana.
 Cambios previos: sin cambios versionados en `src/` ni `tests/` respecto de HEAD. Sin seguimiento: `docs/practica-navegacion/`.
