@@ -1,4 +1,4 @@
-import { cellKey, isWalkable, type GridMap, type GridPoint } from "../model/grid";
+import { cellKey, entryCost, isWalkable, type GridMap, type GridPoint } from "../model/grid";
 import { manhattanDistance, walkableNeighbors } from "./gridGraph";
 
 export type SearchAlgorithm = "bfs" | "astar";
@@ -89,7 +89,7 @@ export function findPathAStar(map: GridMap, start: GridPoint, goal: GridPoint): 
     explored.push(current.point);
 
     if (samePoint(current.point, goal)) {
-      return successResult("astar", start, goal, parents, explored, maximumFrontier);
+      return successResult("astar", start, goal, parents, explored, maximumFrontier, current.cost);
     }
 
     for (const neighbor of walkableNeighbors(map, current.point)) {
@@ -98,7 +98,7 @@ export function findPathAStar(map: GridMap, start: GridPoint, goal: GridPoint): 
         continue;
       }
 
-      const candidateCost = current.cost + 1;
+      const candidateCost = current.cost + entryCost(map, neighbor);
       const knownCost = bestCosts.get(neighborKey);
       if (knownCost === undefined || candidateCost < knownCost) {
         insertionOrder += 1;
@@ -167,13 +167,14 @@ function successResult(
   parents: ReadonlyMap<string, GridPoint>,
   explored: readonly GridPoint[],
   maximumFrontier: number,
+  totalCostOverride: number | null = null,
 ): SearchResult {
   const path = reconstructPath(start, goal, parents);
   return {
     algorithm,
     status: "success",
     path,
-    totalCost: path.length - 1,
+    totalCost: totalCostOverride ?? path.length - 1,
     expandedNodes: explored.length,
     maximumFrontier,
     explored,

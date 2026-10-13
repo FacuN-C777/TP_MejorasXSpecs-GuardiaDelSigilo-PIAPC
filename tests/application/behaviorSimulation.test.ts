@@ -245,3 +245,46 @@ describe("behavior simulation integration", () => {
     expect(advance.state.skipPauseOnArrival).toBe(false);
   });
 });
+
+describe("anexo A: planRoute usa el modo ponderado del mapa (A-AC3)", () => {
+  const START: GridPoint = { x: 0, y: 1 };
+  const GOAL: GridPoint = { x: 4, y: 1 };
+  const SLOW_MAP = createGridMap(5, 3, [], [
+    [{ x: 1, y: 1 }, 5],
+    [{ x: 2, y: 1 }, 5],
+    [{ x: 3, y: 1 }, 5],
+  ]);
+  const UNIT_MAP = createGridMap(5, 3, []);
+
+  it("planifica con costo 6 cuando el mapa trae la franja lenta", () => {
+    const sim = new BehaviorSimulator({
+      map: SLOW_MAP,
+      patrolPoints: [GOAL],
+      guardCell: START,
+    });
+
+    sim.step();
+
+    const plan = sim.state.lastPlan;
+    expect(plan).not.toBeNull();
+    expect(plan!.status).toBe("success");
+    expect(plan!.path.length - 1).toBe(6);
+    expect(plan!.totalCost).toBe(6);
+  });
+
+  it("conserva el plan unitario con costo 4", () => {
+    const sim = new BehaviorSimulator({
+      map: UNIT_MAP,
+      patrolPoints: [GOAL],
+      guardCell: START,
+    });
+
+    sim.step();
+
+    const plan = sim.state.lastPlan;
+    expect(plan).not.toBeNull();
+    expect(plan!.status).toBe("success");
+    expect(plan!.path.length - 1).toBe(4);
+    expect(plan!.totalCost).toBe(4);
+  });
+});

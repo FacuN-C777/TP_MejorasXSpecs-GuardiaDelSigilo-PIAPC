@@ -7,6 +7,7 @@ export interface GridMap {
   readonly width: number;
   readonly height: number;
   readonly blocked: ReadonlySet<string>;
+  readonly costs?: ReadonlyMap<string, number>;
 }
 
 export function cellKey(point: GridPoint): string {
@@ -17,6 +18,7 @@ export function createGridMap(
   width: number,
   height: number,
   blockedCells: Iterable<GridPoint>,
+  costCells: Iterable<readonly [GridPoint, number]> = [],
 ): GridMap {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width <= 0 || height <= 0) {
     throw new Error("Grid dimensions must be positive integers.");
@@ -30,7 +32,18 @@ export function createGridMap(
     blocked.add(cellKey(point));
   }
 
-  return { width, height, blocked };
+  const costs = new Map<string, number>();
+  for (const [point, cost] of costCells) {
+    if (!isInside({ width, height }, point)) {
+      throw new Error(`Entry cost cell is outside the grid: ${cellKey(point)}.`);
+    }
+    if (!Number.isInteger(cost) || cost < 1) {
+      throw new Error(`Entry costs must be integers >= 1: ${cellKey(point)}.`);
+    }
+    costs.set(cellKey(point), cost);
+  }
+
+  return costs.size > 0 ? { width, height, blocked, costs } : { width, height, blocked };
 }
 
 export function isInside(
@@ -47,6 +60,10 @@ export function isInside(
 
 export function isWalkable(map: GridMap, point: GridPoint): boolean {
   return isInside(map, point) && !map.blocked.has(cellKey(point));
+}
+
+export function entryCost(map: GridMap, point: GridPoint): number {
+  return map.costs?.get(cellKey(point)) ?? 1;
 }
 
 export function cellCenter(point: GridPoint, tileSize: number): GridPoint {
